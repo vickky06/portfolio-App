@@ -9,12 +9,19 @@ const scrSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, ref: 'User',
         require:true
     },
-    portfolio: {
+    email:{
+        type: String,
+        required: true,
+        trim: true,
+        lowercase: true,
+    },
+    portfolio: [{
+        
         ticker: {
             type: String,
             required: true,
             trim: true,
-            unique: true
+            
         },
         shares: {
             type: Number,
@@ -25,8 +32,28 @@ const scrSchema = new mongoose.Schema({
             require: true,
             default: 0
         }
-
-    }
+    }],
+    history:[{
+        type:{
+            type: String,
+            required: true,
+            trim: true,
+        },
+        ticker: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        shares: {
+            type: Number,
+            require: true,
+        }, 
+        avgBuyPrice: {
+            type: Number,
+            require: true,
+            default: 0
+        }
+    }],
 });
 scrSchema.static.findUserById = async (id)=>{
     const user = await Scr.findOne({

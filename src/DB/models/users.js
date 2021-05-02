@@ -43,43 +43,44 @@ const userSchema = new mongoose.Schema({
         }
 
     }],
-    portfolio: [{
-        ticker: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        shares: {
-            type: Number,
-            require: true,
-        }, 
-        avgBuyPrice: {
-            type: Number,
-            require: true,
-            default: 0
-        }
-    }],
-    history:[{
-        type:{
-            type: String,
-            required: true,
-            trim: true,
-        },
-        ticker: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        shares: {
-            type: Number,
-            require: true,
-        }, 
-        avgBuyPrice: {
-            type: Number,
-            require: true,
-            default: 0
-        }
-    }],
+    // portfolio: [{
+    //     ticker: {
+    //         type: String,
+    //         required: true,
+    //         trim: true,
+    //         unqiue:false
+    //     },
+    //     shares: {
+    //         type: Number,
+    //         require: true,
+    //     }, 
+    //     avgBuyPrice: {
+    //         type: Number,
+    //         require: true,
+    //         default: 0
+    //     }
+    // }],
+    // history:[{
+    //     type:{
+    //         type: String,
+    //         required: true,
+    //         trim: true,
+    //     },
+    //     ticker: {
+    //         type: String,
+    //         required: true,
+    //         trim: true,
+    //     },
+    //     shares: {
+    //         type: Number,
+    //         require: true,
+    //     }, 
+    //     avgBuyPrice: {
+    //         type: Number,
+    //         require: true,
+    //         default: 0
+    //     }
+    // }],
 }, {
     timestamps: true
 });
@@ -127,7 +128,7 @@ userSchema.methods.generateAuthToken = async function() {
 //hasing passsword
 userSchema.pre('save', async function(next) {
     const user = this
-    console.log("we are hashing password")
+    // console.log("we are hashing password")
     if (user.isModified('password')) {
         // console.log('Password change activated')
         // console.log('password before'+user.password)

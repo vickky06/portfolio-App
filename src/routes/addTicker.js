@@ -4,7 +4,7 @@ const auth = require('../middleware/auth');
 const _ = require('lodash')
 router.use(express.json());
 const User = require('../DB/models/users');
-// const Scr = require('../DB/models/securities')
+const Scr = require('../DB/models/securities')
 
 
 /**
@@ -17,54 +17,80 @@ router.post('/buyStocks', auth, async (req, res) => {
     console.log(req.body, "BODY requested")
     let { ticker, shares, avgBuyPrice } = req.body
     if (!(ticker && shares && avgBuyPrice)) {
-        return res.status(400).send('ticker,shares,avgBuyPrice are required fields' )
+        return res.status(400).send('ticker,shares,avgBuyPrice are required fields')
     }
-    if(shares<0){
-        return res.status(400).send('Share count can not be -ve' )
+    if (shares < 0) {
+        return res.status(400).send('Share count can not be -ve')
     }
-
-    let exportFolio = req.user.portfolio;
-    let historyOfFolio = req.user.history;
-    let email = req.user.email, pushObj = {};
-
-    let ifMatch = _.filter(exportFolio, {
-        ticker: ticker
+    let email = req.user.email
+    let resr = await Scr.findOne({
+        email: req.user.email
     });
-    console.log('ifMatch', _.get(ifMatch[0], 'ticker', ""))
-    if (ifMatch.length > 0) {
-        let newAVG = ((ifMatch[0].shares * ifMatch[0].avgBuyPrice) + (shares * avgBuyPrice)) / (ifMatch[0].shares + shares);
-        let newQTY = ifMatch[0].shares + shares;
-        _.remove(exportFolio, {
-            ticker: ticker
+    console.log(resr,"RESER")
+    if (!resr) {
+        let src = new Scr({
+            email: req.user.email,
+            portfolio: [{ ...req.body }],
+            history: [{ ...req.body, type: 'BUY' }],
+            owner : req.user
         })
-        pushObj = {
-            "ticker": ticker,
-            'shares': newQTY,
-            'avgBuyPrice': newAVG
-        }
-
+        await src.save();
+        res.status(201).send(src)
     } else {
-        pushObj = {
-            "ticker": ticker,
-            "shares": shares,
-            "avgBuyPrice": avgBuyPrice
+        let exportFolio = resr.portfolio;
+        let historyOfFolio = resr.history;
+        let ifMatch = _.filter(exportFolio, {
+            ticker: ticker
+        });
+        console.log('ifMatch', _.get(ifMatch[0], 'ticker', "****"))
+        if (ifMatch.length > 0) {
+            let newAVG = ((ifMatch[0].shares * ifMatch[0].avgBuyPrice) + (shares * avgBuyPrice)) / (ifMatch[0].shares + shares);
+            let newQTY = ifMatch[0].shares + shares;
+            _.remove(exportFolio, {
+                ticker: ticker
+            })
+            pushObj = {
+                "ticker": ticker,
+                'shares': newQTY,
+                'avgBuyPrice': newAVG
+            }
+
+        } else {
+            pushObj = {
+                "ticker": ticker,
+                "shares": shares,
+                "avgBuyPrice": avgBuyPrice
+            }
+        }
+        historyOfFolio.push({ ...req.body, type: 'BUY' })
+        exportFolio.push(pushObj)
+        console.log(exportFolio, "UPDATED PORTFOLIO")
+        try {
+            let response = await Scr.findOneAndUpdate({
+                email: email
+            }, {
+                portfolio: exportFolio,
+                history: historyOfFolio
+            }, { new: true });
+            // await User.save()
+            return res.status(201).send(response)
+        } catch (e) {
+            return res.status(400).send('Some error occured' + e)
         }
     }
-    historyOfFolio.push({ ...req.body, type: 'BUY' })
-    exportFolio.push(pushObj)
-    console.log(exportFolio, "UPDATED PORTFOLIO")
-    try {
-        let response = await User.findOneAndUpdate({
-            email: email
-        }, {
-            portfolio: exportFolio,
-            history: historyOfFolio
-        }, { new: true });
-        // await User.save()
-        return res.status(201).send(response)
-    } catch (e) {
-        return res.status(400).send('Some error occured' + e)
-    }
+    // let exportFolio = req.user.portfolio;
+    // let historyOfFolio = req.user.history;
+    // let email = req.user.email, pushObj = {};
+    // let res =  await Scr.findOne({
+    //     email: email
+    // });
+
+
+    // let ifMatch = _.filter(exportFolio, {
+    //     ticker: ticker
+    // });
+    // console.log('ifMatch', _.get(ifMatch[0], 'ticker', ""))
+
 
 });
 
@@ -77,16 +103,23 @@ router.post('/sellStocks', auth, async (req, res) => {
     console.log('+++++++++++++++++++++++++++++Sell Stocks+++++++++++++++++++++++++++++')
     console.log(req.body, "BODY requested");
     let { ticker, shares } = req.body;
-    let historyOfFolio = req.user.history;
+    
 
     if (!(ticker && shares)) {
         return res.status(400).send('ticker,shares  are required fields')
     }
-    if(shares<0){
-        return res.status(400).send('Share count can not be -ve' )
+    if (shares < 0) {
+        return res.status(400).send('Share count can not be -ve')
     }
-    let exportFolio = req.user.portfolio;
-    let email = req.user.email;
+    let email = req.user.email
+    let resr = await Scr.findOne({
+        email: req.user.email
+    });
+    if(!resr){
+        return res.status(404).send('user not found');
+    }
+    let exportFolio = resr.portfolio;
+    let historyOfFolio = resr.history;
     // let currentReturns = req.user.currentReturn;
     let ifMatch = _.filter(exportFolio, {
         ticker: ticker
@@ -107,7 +140,7 @@ router.post('/sellStocks', auth, async (req, res) => {
             exportFolio.push(pushObj);
 
             try {
-                let response = await User.findOneAndUpdate({
+                let response = await Scr.findOneAndUpdate({
                     email: email
                 }, {
                     portfolio: exportFolio,
@@ -134,7 +167,13 @@ router.post('/sellStocks', auth, async (req, res) => {
  */
 router.get('/fetchPortfolio', auth, async (req, res) => {
     console.log('+++++++++++++++++++++++++++++Fetch FOLIO+++++++++++++++++++++++++++++');
-    return res.status(201).send(req.user.portfolio)
+    let resr = await Scr.findOne({
+        email: req.user.email
+    });
+    if(!resr){
+        return res.status(404).send('user not found');
+    }
+    return res.status(201).send(resr.portfolio)
 });
 
 /**
@@ -147,12 +186,22 @@ router.get('/fetchTrades', auth, async (req, res) => {
     if (!searchFor) {
         return res.status(400).send('No Ticker Mentioned');
     }
-    searchFor = searchFor.toLowerCase()
-    let allAvailableTickers = req.user.portfolio.map(({ ticker }) => ticker.toLowerCase());
+    searchFor = searchFor.toLowerCase();
+    // console.log("Search FOR",searchFor)
+
+    let resr = await Scr.findOne({
+        email: req.user.email
+    });
+    if(!resr){
+        return res.status(404).send('user not found');
+    }
+    let allAvailableTickers = resr.history.map(({ ticker }) => ticker.toLowerCase());
+    // console.log(allAvailableTickers,"res")
+
     if (allAvailableTickers.includes(searchFor)) {
-        let allTrades = _.filter(req.user.history, (user) => {
-            if (user.name.toLowerCase() === "john") {
-                return user
+        let allTrades = _.filter(resr.history, (rr) => {
+            if (rr.ticker.toLowerCase() === searchFor.toLowerCase()) {
+                return rr
             }
         });
         return res.status(201).send(allTrades)
@@ -170,12 +219,20 @@ router.get('/fetchTrades', auth, async (req, res) => {
 router.get('/returns', auth, async (req, res) => {
     const sellingPrice = 100
     let sumV = 0;
-    let portfolio = req.user.portfolio;
+    let resr = await Scr.findOne({
+        email: req.user.email
+    });
+    if(!resr){
+        return res.status(404).send('user not found');
+    }
+    let portfolio = resr.portfolio;
     _.forEach(portfolio, (asset) => {
         return sumV += ((sellingPrice - asset.avgBuyPrice) * asset.shares);
     });
-
-    return res.status(200).send(sumV)
+    // console.log(sumV,"SUMV")
+     return res.status(201).send({
+         "return":sumV
+     })
 })
 
 module.exports = router;
