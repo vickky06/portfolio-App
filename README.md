@@ -55,7 +55,9 @@ GODREJIND
 
 Observe carefully how average price doesn’t change after selling off a few securities. This is because selling affects your returns, not the average price of the stocks bought. 
 
+https://www.getpostman.com/collections/0836a733107fa1cc5529
 
+POSTMAN LINK
 
 1. do git pull
 2. npm install
