@@ -1,0 +1,30 @@
+{
+  "name": "portfolioapp",
+  "version": "1.0.0",
+  "description": "A portfolio tracking API needs to be implemented which allows adding/deleting/updating trades and can do basic return calculations ",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js"
+  },
+  "author": "vivek singh",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^3.0.8",
+    "bluebird": "^3.7.2",
+    "chart.js": "^2.9.3",
+    "config": "^3.2.5",
+    "express": "^4.17.1",
+    "hbs": "^4.1.0",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.21",
+    "memory-cache": "^0.2.0",
+    "moment": "^2.24.0",
+    "mongoose": "^5.9.1",
+    "nodemon": "^2.0.2",
+    "pretty-easy-date-check": "^1.2.4",
+    "shortid": "^2.2.15",
+    "valid-url": "^1.0.9",
+    "validator": "^12.2.0"
+  }
+}
